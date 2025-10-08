@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HomeRates.ai — Chat (UX preview)</title>
+
+  <!-- Icons/branding from assets/ -->
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" href="assets/HR-logo.svg" type="image/svg+xml">
+
+  <style>
+    :root{
+      --bg:#0b0b0f; --fg:#e7e7ee; --muted:#a6a6b3; --panel:#13131a; --stroke:#1d1d26;
+      --chip:#17171f; --accent:#4da3ff; --accent-ink:#001028; --success:#21c07a;
+    }
+    * { box-sizing: border-box }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--fg);
+      font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial }
+    a { color: var(--accent); text-decoration: none }
+    .shell { display:grid; grid-template-rows:56px 1fr; min-height:100vh }
+
+    /* Top bar */
+    .topbar { display:flex; align-items:center; gap:12px; padding:10px 14px;
+      border-bottom:1px solid var(--stroke); background:rgba(19,19,26,.9);
+      backdrop-filter: blur(6px); position:sticky; top:0; z-index:5 }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700 }
+    .brand img { width:24px; height:24px }
+    .top-actions { margin-left:auto; display:flex; gap:8px }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      padding:8px 12px; border:1px solid #2a2a35; background:var(--chip); color:var(--fg);
+      border-radius:10px; cursor:pointer; font-weight:600 }
+    .btn.accent { background:var(--accent); color:var(--accent-ink) }
+    .btn.ghost { background:transparent }
+    .pill { font-size:12px; color:var(--muted) }
+
+    /* App layout */
+    .app { display:grid; grid-template-columns:280px 1fr; min-height:calc(100vh - 56px) }
+    .sidebar { background:var(--panel); border-right:1px solid var(--stroke); padding:14px; overflow:auto }
+    .side-head { font-weight:700; margin:6px 0 10px }
+    .side-group { margin:10px 0 16px }
+    .side-btn { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a2a35;
+      background:var(--chip); color:var(--fg); text-align:left; margin:6px 0; cursor:pointer }
+    .side-sep { border-color:var(--stroke); margin:12px 0 }
+
+    /* Chat column */
+    .main { display:grid; grid-template-rows:1fr auto }
+    #thread { padding:20px; overflow:auto }
+    .msg { max-width:880px; background:#0f0f15; border:1px solid var(--stroke);
+      border-radius:12px; padding:12px 14px; margin:0 0 12px; white-space:pre-wrap }
+    .msg.user { background:#11111a }
+    .composer-wrap { border-top:1px solid var(--stroke); padding:12px; background:var(--panel) }
+    #composer { display:flex; gap:10px; max-width:980px; margin:0 auto }
+    #query { flex:1; min-height:56px; max-height:200px; resize:vertical; padding:12px;
+      border-radius:12px; border:1px solid #2a2a35; background:#0f0f15; color:var(--fg) }
+    #send { min-width:120px; border-radius:12px; border:1px solid #2a2a35;
+      background:var(--accent); color:var(--accent-ink); font-weight:700; cursor:pointer }
+    #build,#loading { position:fixed; right:12px; opacity:.6; font:12px system-ui }
+    #build { bottom:10px } #loading { bottom:28px }
+
+    /* Login modal */
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:50 }
+    .modal { width:360px; max-width:92vw; background:var(--panel); border:1px solid var(--stroke);
+      border-radius:14px; padding:16px }
+    .modal h3 { margin:0 0 8px }
+    .field { margin:8px 0 }
+    .field input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a2a35;
+      background:#0f0f15; color:var(--fg) }
+    .row { display:flex; gap:10px; align-items:center; justify-content:flex-end; margin-top:12px }
+
+    @media (max-width: 880px) {
+      .app { grid-template-columns:1fr }
+      .sidebar { display:none }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/HR-logo.svg" alt="HR" onerror="this.style.display='none'">
+        <span>HomeRates.ai</span>
+      </div>
+      <span class="pill">UX preview • front-end only</span>
+      <div class="top-actions">
+        <button id="loginBtn" class="btn ghost">Log in</button>
+        <button id="newChatTop" class="btn accent">New Chat</button>
+      </div>
+    </header>
+
+    <!-- Two-column app -->
+    <div class="app">
+      <!-- Left sidebar -->
+      <aside class="sidebar">
+        <div class="side-head" id="left-title">Shortcuts</div>
+        <div class="side-group">
+          <button class="side-btn" id="newChatBtn">New Chat</button>
+          <button class="side-btn" id="saveChatBtn">Save Chat</button>
+          <button class="side-btn" id="newProjectBtn">New Project</button>
+        </div>
+
+        <hr class="side-sep">
+        <div class="side-head">Projects</div>
+        <div id="projectsList"></div>
+
+        <hr class="side-sep">
+        <div class="side-head">Saved</div>
+        <div id="savedThreads"></div>
+      </aside>
+
+      <!-- Chat column -->
+      <main class="main">
+        <div id="thread" aria-live="polite"></div>
+
+        <div class="composer-wrap">
+          <form id="composer">
+            <textarea id="query" placeholder="Ask about mortgages, payments, seller credits…"></textarea>
+            <button id="send" type="submit">Send</button>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <span id="loading"></span>
+  <span id="build"></span>
+
+  <!-- Login modal -->
+  <div id="loginModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="modal">
+      <h3 id="loginTitle">Log in</h3>
+      <div class="field"><input id="email" type="email" placeholder="Email"></div>
+      <div class="field"><input id="password" type="password" placeholder="Password"></div>
+      <div class="row">
+        <button id="closeLogin" class="btn ghost" type="button">Cancel</button>
+        <button id="doLogin" class="btn accent" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ===== DOM Ready
+  function onReady(fn){ document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', fn) : fn(); }
+
+  // ===== Utilities
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const el = (tag, cls) => { const e=document.createElement(tag); if(cls) e.className=cls; return e; };
+  const setText = (id, t) => { const n=document.getElementById(id); if(n) n.textContent=t; };
+
+  // ===== Fake data
+  const WELCOME = `Hey—this is a live UX preview.
+No server calls yet. Try typing, saving, new chat, or opening Login.`;
+
+  const REPLY = (q) => `You asked:\n“${q}”\n\nIn the real app, this is where responses land.
+For now, this is a stub so you can test flow and layout.`;
+
+  // ===== Message rendering
+  function appendMessage(role, content){
+    const thread = $('#thread'); if(!thread) return;
+    const card = el('div', \`msg \${role==='user'?'user':'assistant'}\`);
+    card.textContent = content;
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+  }
+  function clearThread(){ const t=$('#thread'); if(t) t.innerHTML=''; }
+
+  // ===== Sidebar
+  function populateShortcuts(){
+    setText('left-title', 'Shortcuts');
+    const projects = $('#projectsList');
+    if (projects){
+      projects.innerHTML='';
+      ['Access Zero DPA','Seller Credit vs Price Cut','DSCR Calculator'].forEach(name=>{
+        const b = el('button','side-btn'); b.textContent=name;
+        b.onclick = () => appendMessage('assistant', \`Opening: \${name} (mock)\`);
+        projects.appendChild(b);
+      });
+    }
+    const saved = $('#savedThreads');
+    if (saved){
+      saved.innerHTML='';
+      ['Refi Scenarios','First-Time Buyer Q&A','Jumbo Options'].forEach(name=>{
+        const b = el('button','side-btn'); b.textContent = name + ' (saved)';
+        b.onclick = () => appendMessage('assistant', \`Loaded saved thread: \${name} (mock)\`);
+        saved.appendChild(b);
+      });
+    }
+  }
+
+  // ===== Composer wiring
+  function wireComposer(){
+    const form=$('#composer'), query=$('#query'), send=$('#send');
+    if(!form || !query || !send) return;
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const text=(query.value||'').trim(); if(!text) return;
+      appendMessage('user', text);
+      query.value='';
+      setText('loading','…');
+      await new Promise(r=>setTimeout(r,250));
+      appendMessage('assistant', REPLY(text));
+      setText('loading','');
+    });
+  }
+
+  // ===== Nav buttons
+  function wireNav(){
+    const newChat = $('#newChatBtn'), newChatTop = $('#newChatTop');
+    [newChat, newChatTop].forEach(btn=>{
+      if(btn) btn.onclick = () => { clearThread(); appendMessage('assistant', WELCOME); };
+    });
+    const save = $('#saveChatBtn'); if(save) save.onclick = () => appendMessage('assistant','Saved (mock)');
+    const proj = $('#newProjectBtn'); if(proj) proj.onclick = () => appendMessage('assistant','New project (mock)');
+  }
+
+  // ===== Login modal (front-end only)
+  function wireLogin(){
+    const modal=$('#loginModal'), open=$('#loginBtn'), close=$('#closeLogin'), go=$('#doLogin');
+    if(!modal) return;
+    const show = ()=>{ modal.style.display='flex'; };
+    const hide = ()=>{ modal.style.display='none'; };
+    if(open) open.onclick = show;
+    if(close) close.onclick = hide;
+    if(go) go.onclick = ()=>{ hide(); appendMessage('assistant','Logged in (mock). In production, this would call your auth endpoint.'); };
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) hide(); });
+  }
+
+  // ===== Boot
+  function boot(){
+    populateShortcuts();
+    wireComposer();
+    wireNav();
+    wireLogin();
+    setText('build','UX preview • single-file');
+    appendMessage('assistant', WELCOME);
+  }
+
+  onReady(boot);
+  </script>
+</body>
+</html>
