@@ -1,94 +1,111 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HomeRates.ai — Chat Interface (v38)</title>
+  <title>HomeRates.ai — Chat Interface (v39)</title>
 
-  <!-- favicon + logo -->
+  <!-- Icons/branding from assets/ -->
   <link rel="icon" href="assets/favicon.ico" sizes="any">
   <link rel="icon" href="assets/HR-logo.svg" type="image/svg+xml">
 
   <style>
     :root {
-      --bg: #0b0b0f;
-      --fg: #e7e7ee;
-      --muted: #a6a6b3;
-      --panel: #13131a;
-      --accent: #4da3ff;
+      --bg:#0b0b0f; --fg:#e7e7ee; --muted:#a6a6b3;
+      --panel:#13131a; --stroke:#1d1d26; --chip:#17171f;
+      --accent:#4da3ff; --accent-ink:#001028;
     }
+    * { box-sizing:border-box }
     html, body {
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
-      color: var(--fg);
-      font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      height:100%; margin:0; background:var(--bg); color:var(--fg);
+      font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     }
-    .app {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      height: 100%;
-    }
+    a { color:var(--accent); text-decoration:none }
+
+    /* App layout */
+    .app { display:grid; grid-template-columns:260px 1fr; min-height:100vh }
     .sidebar {
-      background: var(--panel);
-      border-right: 1px solid #1d1d26;
-      padding: 14px;
-      overflow-y: auto;
+      background:var(--panel); border-right:1px solid var(--stroke);
+      padding:14px; overflow:auto;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      margin: 6px 0 14px 0;
-    }
-    .brand img {
-      width: 22px;
-      height: 22px;
-    }
+    .brand { display:flex; align-items:center; gap:8px; font-weight:700; margin:6px 0 14px }
+    .brand img { width:22px; height:22px }
+
     .btn {
-      display: block;
-      width: 100%;
-      margin: 6px 0;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #2a2a35;
-      background: #17171f;
-      color: var(--fg);
-      text-align: left;
-      cursor: pointer;
+      display:block; width:100%; margin:6px 0; padding:10px 12px;
+      border-radius:10px; border:1px solid #2a2a35; background:var(--chip);
+      color:var(--fg); text-align:left; cursor:pointer;
     }
-    .main {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      min-width: 0;
+    .side-sep { border-color:var(--stroke); margin:12px 0 }
+
+    /* Chat column */
+    .main { display:flex; flex-direction:column; min-width:0 }
+    #thread { flex:1; overflow:auto; padding:16px }
+    .msg {
+      background:#0f0f15; border:1px solid var(--stroke); border-radius:12px;
+      padding:12px; margin:0 0 12px; white-space:pre-wrap;
     }
-    #thread {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-    .composer-wrap {
-      border-top: 1px solid #1d1d26;
-      padding: 10px;
-      background: var(--panel);
-    }
-    #composer {
-      display: flex;
-      gap: 8px;
-    }
+    .msg.user { background:#11111a }
+
+    .composer-wrap { border-top:1px solid var(--stroke); padding:10px; background:var(--panel) }
+    #composer { display:flex; gap:8px }
     #query {
-      flex: 1;
-      min-height: 48px;
-      max-height: 160px;
-      resize: vertical;
-      border-radius: 10px;
-      border: 1px solid #2a2a35;
-      background: #0f0f15;
-      color: var(--fg);
-      padding: 10px;
+      flex:1; min-height:48px; max-height:160px; resize:vertical;
+      border-radius:10px; border:1px solid #2a2a35; background:#0f0f15; color:var(--fg); padding:10px;
     }
     #send {
-      min-width: 110px;
-      border-rad
+      min-width:110px; border-radius:10px; border:1px solid #2a2a35;
+      background:var(--accent); color:var(--accent-ink); font-weight:600; cursor:pointer;
+    }
+
+    /* Build/status */
+    #build,#loading { position:fixed; right:12px; opacity:.6; font:12px system-ui }
+    #build { bottom:10px } #loading { bottom:28px }
+
+    @media (max-width:880px) {
+      .app { grid-template-columns:1fr }
+      .sidebar { display:none }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <!-- Left sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/HR-logo.svg" alt="HR Logo" onerror="this.style.display='none'">
+        HomeRates.ai
+      </div>
+
+      <button class="btn" id="newChatBtn">New Chat</button>
+      <button class="btn" id="saveChatBtn">Save Chat</button>
+      <button class="btn" id="newProjectBtn">New Project</button>
+
+      <hr class="side-sep">
+      <div id="projectsList"></div>
+
+      <hr class="side-sep">
+      <div id="savedThreads"></div>
+    </aside>
+
+    <!-- Chat column -->
+    <main class="main">
+      <div id="thread" aria-live="polite"></div>
+
+      <div class="composer-wrap">
+        <form id="composer">
+          <textarea id="query" placeholder="Ask about mortgages, payments, seller credits…"></textarea>
+          <button id="send" type="submit">Send</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <span id="loading"></span>
+  <span id="build"></span>
+
+  <!-- Main app logic (v39 calls /api/chat) -->
+  <script src="main.v39.js" defer></script>
+</body>
+</html>
