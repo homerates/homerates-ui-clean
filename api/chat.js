@@ -1,34 +1,65 @@
-﻿export default async function handler(req, res) {
+﻿const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
+const SERIES = { TEN_YEAR: "DGS10", MORTGAGE_30Y: "MORTGAGE30US" };
+
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
+  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  const q = String(body.message || "").trim();
+
+  if (!process.env.FRED_API_KEY) {
+    return res.status(200).json({
+      reply: `Live rates unavailable (no FRED_API_KEY in this deployment). Your message: “${q}”.`
+    });
+  }
+
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-    const input = String(body.message || "").trim();
-    const reply = makeReply(input);
-    return res.status(200).json({ reply });
+    if (isTenYearQuery(q)) {
+      const { date, value } = await fredLatest(SERIES.TEN_YEAR);
+      return res.status(200).json({ reply: `10-Year Treasury: ${pct(value)} as of ${date}.` });
+    }
+
+    if (isMortgage30Query(q)) {
+      const { date, value } = await fredLatest(SERIES.MORTGAGE_30Y);
+      return res.status(200).json({ reply: `30-Year Fixed Mortgage Avg (PMMS): ${pct(value)} (week of ${date}).` });
+    }
+
+    if (/\b(hello|hi|hey)\b/i.test(q)) {
+      return res.status(200).json({ reply: "Hi—welcome to HomeRates.ai. Ask about 10-year treasury or 30-year fixed." });
+    }
+
+    return res.status(200).json({
+      reply: `I heard: “${q}”. Try “10-year treasury” or “30-year fixed rate” for live numbers.`
+    });
+
   } catch (err) {
-    console.error("[api/chat] error:", err);
-    return res.status(500).json({ error: "Internal error" });
+    console.error("[/api/chat] error:", err);
+    return res.status(200).json({
+      reply: `Couldn’t fetch live data right now. (${String(err)})`
+    });
   }
 }
 
-function makeReply(q) {
-  if (!q) return "You didn’t type anything.";
-  const lower = q.toLowerCase();
-  if (/\brate\b|\bmortgage\b/.test(lower)) {
-    return "Rates depend on credit, DTI, LTV, and program. Share loan amount, credit score, and occupancy to ballpark scenarios.";
-  }
-  if (/\bdown\b|\bdpa\b|\bfirst[-\s]?time\b/.test(lower)) {
-    return "Down-payment assistance may be available. We can compare 3%–5% down vs. DPA and total cash-to-close.";
-  }
-  if (/\brefi\b|\brefinance\b/.test(lower)) {
-    return "Refi check: current rate, balance, property value, and goal (cash-out vs. payment drop).";
-  }
-  if (/\bhello\b|\bhi\b|\bhey\b/.test(lower)) {
-    return "Hi—welcome to HomeRates.ai. Ask about payments, seller credits, DPA, or DSCR.";
-  }
-  return `I heard: “${q}”. This endpoint is a stub—perfect for wiring the UI.`;
+function isTenYearQuery(s){ return /\b(10\s*year|10yr|ten\s*year|treasury|t[-\s]?note|note)\b/i.test(s); }
+function isMortgage30Query(s){ return /\b(30\s*year|30yr).*(fixed|fxd)?\b/i.test(s) || /\bmortgage\b.*\brate\b/i.test(s); }
+function pct(x){ return (x==null||Number.isNaN(x)) ? "N/A" : `${Number(x).toFixed(2)}%`; }
+
+async function fredLatest(seriesId){
+  const url = new URL(FRED_BASE);
+  url.searchParams.set("series_id", seriesId);
+  url.searchParams.set("api_key", process.env.FRED_API_KEY);
+  url.searchParams.set("file_type", "json");
+  url.searchParams.set("sort_order", "desc");
+  url.searchParams.set("limit", "5");
+
+  const r = await fetch(url.toString(), { cache: "no-store" });
+  if (!r.ok) throw new Error(`FRED HTTP ${r.status}`);
+
+  const data = await r.json();
+  const obs = (data?.observations || []).find(o => o?.value && o.value !== ".");
+  if (!obs) throw new Error("No observations found");
+  return { date: obs.date, value: parseFloat(obs.value) };
 }
