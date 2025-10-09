@@ -1,7 +1,8 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 .env
 .env.*
 !.env.example
 backend/
 public/New Text Document.txt
+.vercel
