@@ -1,119 +1,85 @@
-// main.v38.js — UX preview (no backend). Safe boot + local demo state.
+// main.v39.js — UI calling /api/chat
 
-// ===== DOM Ready
-function onReady(fn){ document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', fn) : fn(); }
+document.addEventListener("DOMContentLoaded", () => {
+  const thread = byId("thread");
+  const form = byId("composer");
+  const query = byId("query");
+  const loadingEl = byId("loading");
+  const buildEl = byId("build");
 
-// ===== Utilities
-const $ = (sel, root=document) => root.querySelector(sel);
-const el = (tag, cls) => { const e=document.createElement(tag); if(cls) e.className=cls; return e; };
-const setText = (id, t) => { const n=document.getElementById(id); if(n) n.textContent=t; };
+  const newChatBtn = byId("newChatBtn");
+  const saveChatBtn = byId("saveChatBtn");
+  const newProjectBtn = byId("newProjectBtn");
 
-// ===== Fake data
-const SAMPLE_WELCOME = `Hey—this is a live UX preview.
-No server calls yet. Try typing, saving, new chat, or opening Login.`;
+  buildEl.textContent = "build: v39";
+  loadingEl.textContent = "";
 
-const SAMPLE_REPLY = (q) => `You asked:\n“${q}”\n\nIn the real app, this is where responses land.
-For now, this is a stub so you can test flow and layout.`;
+  let chatHistory = [];
 
-// ===== Message rendering
-function appendMessage(role, content){
-  const thread = $('#thread'); if(!thread) return;
-  const card = el('div', `msg ${role==='user'?'user':'assistant'}`);
-  card.textContent = content;
-  thread.appendChild(card);
-  thread.scrollTop = thread.scrollHeight;
-}
-
-function clearThread(){
-  const t = $('#thread'); if (t) t.innerHTML = '';
-}
-
-// ===== Sidebar sections
-function populateShortcuts(){
-  setText('left-title', 'Shortcuts');
-  const projects = $('#projectsList');
-  if (projects){
-    projects.innerHTML = '';
-    ['Access Zero DPA','Seller Credit vs Price Cut','DSCR Calculator'].forEach(name=>{
-      const b = el('button','side-btn'); b.textContent = name;
-      b.onclick = () => appendMessage('assistant', `Opening: ${name} (mock)`);
-      projects.appendChild(b);
-    });
-  }
-  const saved = $('#savedThreads');
-  if (saved){
-    saved.innerHTML = '';
-    ['Refi Scenarios','First-Time Buyer Q&A','Jumbo Options'].forEach(name=>{
-      const b = el('button','side-btn'); b.textContent = name + ' (saved)';
-      b.onclick = () => appendMessage('assistant', `Loaded saved thread: ${name} (mock)`);
-      saved.appendChild(b);
-    });
-  }
-}
-
-// ===== Composer wiring
-function wireComposer(){
-  const form = $('#composer'), query = $('#query'), send = $('#send');
-  if(!form || !query || !send) return;
-
-  form.addEventListener('submit', async (e)=>{
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const text = (query.value || '').trim(); if(!text) return;
-    appendMessage('user', text);
-    query.value = '';
-    setText('loading', '…');
+    const text = (query.value || "").trim();
+    if (!text) return;
+    appendMessage("user", text);
+    query.value = "";
+    setLoading(true);
 
-    // fake latency
-    await new Promise(r => setTimeout(r, 250));
-    appendMessage('assistant', SAMPLE_REPLY(text));
-
-    setText('loading', '');
-  });
-}
-
-// ===== Nav buttons
-function wireNav(){
-  const newChat = $('#newChatBtn'), newChatTop = $('#newChatTop');
-  [newChat, newChatTop].forEach(btn=>{
-    if(btn) btn.onclick = () => { clearThread(); appendMessage('assistant', SAMPLE_WELCOME); };
+    try {
+      const reply = await callChatAPI(text);
+      appendMessage("assistant", reply);
+      chatHistory.push({ user: text, ai: reply });
+    } catch (err) {
+      console.error(err);
+      appendMessage("assistant", "Network hiccup. Try again.");
+    } finally {
+      setLoading(false);
+    }
   });
 
-  const save = $('#saveChatBtn');
-  if (save) save.onclick = () => appendMessage('assistant','Saved (mock)');
+  newChatBtn.addEventListener("click", () => {
+    thread.innerHTML = "";
+    chatHistory = [];
+    appendMessage("assistant", "New chat started. Ask me anything about mortgages or programs.");
+  });
 
-  const proj = $('#newProjectBtn');
-  if (proj) proj.onclick = () => appendMessage('assistant','New project (mock)');
-}
+  saveChatBtn.addEventListener("click", () => {
+    if (!chatHistory.length) {
+      alert("No chat history to save.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify(chatHistory, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "chat-history.json";
+    a.click();
+  });
 
-// ===== Login modal (front-end only)
-function wireLogin(){
-  const modal = $('#loginModal'), open = $('#loginBtn'), close = $('#closeLogin'), go = $('#doLogin');
-  if(!modal) return;
+  newProjectBtn.addEventListener("click", () => {
+    alert("Project creation placeholder — coming soon.");
+  });
 
-  const show = () => { modal.style.display='flex'; };
-  const hide = () => { modal.style.display='none'; };
+  // Welcome
+  appendMessage("assistant", "Welcome to HomeRates.ai — your mortgage assistant.");
 
-  if(open) open.onclick = show;
-  if(close) close.onclick = hide;
-  if(go) go.onclick = () => {
-    hide();
-    appendMessage('assistant','Logged in (mock). In production, this would call your auth endpoint.');
-  };
+  // Helpers
+  function appendMessage(role, text) {
+    const msg = document.createElement("div");
+    msg.className = "msg " + role;
+    msg.textContent = text;
+    thread.appendChild(msg);
+    thread.scrollTop = thread.scrollHeight;
+  }
+  function setLoading(on) { loadingEl.textContent = on ? "…" : ""; }
+  function byId(id) { return document.getElementById(id); }
 
-  // Close on backdrop click
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) hide(); });
-}
-
-// ===== Boot
-function boot(){
-  populateShortcuts();
-  wireComposer();
-  wireNav();
-  wireLogin();
-
-  setText('build','UX preview • main.v38');
-  appendMessage('assistant', SAMPLE_WELCOME);
-}
-
-onReady(boot);
+  async function callChatAPI(message) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.reply || "No reply.";
+  }
+});
