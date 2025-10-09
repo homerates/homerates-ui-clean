@@ -9,7 +9,9 @@
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/", "dest": "/index-v39.html" }
+    { "src": "/api/health-v39", "dest": "/api/health" },
+    { "src": "/api/chat-v39",   "dest": "/api/chat"   },
+    { "src": "/api/(.*)",       "dest": "/api/$1"     },
+    { "src": "/",               "dest": "/index-v39.html" }
   ]
 }
