@@ -4,16 +4,15 @@ export default async function handler(req, res) {
   let fredPing = null;
   if (hasFred) {
     try {
-      const url = new URL("https://api.stlouisfed.org/fred/series/observations");
-      url.searchParams.set("series_id", "DGS10");
-      url.searchParams.set("api_key", process.env.FRED_API_KEY);
-      url.searchParams.set("file_type", "json");
-      url.searchParams.set("limit", "1");
-      const r = await fetch(url.toString(), { cache: "no-store" });
+      const u = new URL("https://api.stlouisfed.org/fred/series/observations");
+      u.searchParams.set("series_id", "DGS10");
+      u.searchParams.set("api_key", process.env.FRED_API_KEY);
+      u.searchParams.set("file_type", "json");
+      u.searchParams.set("limit", "1");
+      const r = await fetch(u.toString(), { cache: "no-store" });
       fredPing = { ok: r.ok, status: r.status };
     } catch (e) { fredPing = { ok: false, error: String(e) }; }
   }
-
   const hasTavily = !!process.env.TAVILY_API_KEY;
   let tavilyPing = null;
   if (hasTavily) {
@@ -33,7 +32,6 @@ export default async function handler(req, res) {
       tavilyPing = { ok: r.ok && (answer || results > 0), status: r.status, answer, results };
     } catch (e) { tavilyPing = { ok: false, error: String(e) }; }
   }
-
   res.status(200).json({
     ok: true, version: "v39-2",
     env: {
