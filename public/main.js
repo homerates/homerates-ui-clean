@@ -4,7 +4,7 @@ const messages=document.getElementById("messages");
 const typing=document.getElementById("typing");
 document.getElementById("year").textContent=new Date().getFullYear();
 
-// Sidebar buttons
+// Sidebar quick prompts
 document.querySelectorAll(".nav-btn[data-prompt]").forEach(btn=>{
   btn.addEventListener("click",()=>{
     input.value=btn.getAttribute("data-prompt");
@@ -28,7 +28,7 @@ function toast(t){
 
 function appendMessage(role, text){
   const el=document.createElement("div");
-  el.className=`message ${role}`;
+  el.className=\`message \${role}\`;
   el.textContent=text;
   messages.appendChild(el);
   messages.scrollTop=messages.scrollHeight;
@@ -52,13 +52,10 @@ form.addEventListener("submit", async (e)=>{
     const data=await res.json();
     typing.hidden=true;
 
+    // Support both echo and structured answers
     if(data && data.ok && (data.answer || data.results)){
-      // structured answer shape
-      const block=document.createElement("div");
-      block.className="message bot";
-      block.textContent=data.answer || "Heres what I found.";
-      messages.appendChild(block);
-      messages.scrollTop=messages.scrollHeight;
+      const reply = data.answer || JSON.stringify(data,null,2);
+      appendMessage("bot", reply);
     } else if(data && data.ok){
       appendMessage("bot", data.reply || data.answer || "Done.");
     } else {
@@ -69,3 +66,5 @@ form.addEventListener("submit", async (e)=>{
     appendMessage("bot","Network error.");
   }
 });
+
+// build 20251010172723
