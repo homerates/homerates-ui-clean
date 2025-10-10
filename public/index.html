@@ -1,88 +1,61 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HomeRates.ai  Chat</title>
-  <meta name="description" content="Live mortgage rates and chat for homebuyers and homeowners." />
-
-  <style>
-    :root { --fg:#111; --muted:#666; --bg:#fff; --accent:#0b5fff; }
-    *{box-sizing:border-box}
-    body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial,Noto Sans,sans-serif;color:var(--fg);background:var(--bg)}
-    header{padding:20px 16px;border-bottom:1px solid #eee}
-    .wrap{max-width:840px;margin:0 auto;padding:16px}
-    #rates{margin:8px 0;font:14px/1.4 system-ui}
-    .muted{color:var(--muted)}
-    .chip{display:inline-block;padding:.2rem .5rem;border:1px solid #ddd;border-radius:999px;font-size:12px;margin-right:6px}
-    .chat{margin-top:16px;border:1px solid #eee;border-radius:12px;padding:12px}
-    .chat textarea{width:100%;min-height:90px;border:1px solid #ddd;border-radius:8px;padding:10px;font:inherit}
-    .chat button{margin-top:8px;padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#f7f7f7;cursor:pointer}
-    .chat button:hover{background:#f0f0f0}
-    pre.result{white-space:pre-wrap;background:#fafafa;border:1px solid #eee;padding:10px;border-radius:8px;overflow:auto}
-  </style>
-
-  <!-- Defer-load the rates widget -->
-  <script src="/rates.v39.js" defer></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HomeRates.ai Chat</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <h1 style="margin:0;">HomeRates.ai</h1>
-      <div class="muted">Trusted, direct answers for buyers, owners, and pros.</div>
-
-      <!--  Widget container lives in the BODY -->
-      <div id="rates"><em>Loading live mortgage rates</em></div>
-
-      <div style="margin-top:8px">
-        <span class="chip">Ask: 10-year treasury</span>
-        <span class="chip">30-year fixed rate</span>
-        <span class="chip">Seller credits today</span>
+  <header class="app-header">
+    <div class="brand">
+      <img src="assets/HR-logo.svg" alt="HomeRates.ai Logo" class="logo"/>
+      <div>
+        <h1>HomeRates.ai</h1>
+        <p class="sub">Version v39  Powered by ChatGPT</p>
       </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <!-- Simple chat block that talks to /api/chat-v39 -->
-    <section class="chat">
-      <label for="q"><strong>Try me:</strong></label>
-      <textarea id="q" placeholder="Type a mortgage or market question"></textarea>
-      <button id="send">Ask</button>
-      <pre id="out" class="result" style="display:none"></pre>
-    </section>
-  </main>
+  <div class="shell">
+    <aside class="sidebar">
+      <nav class="nav">
+        <div class="nav-section">Quick actions</div>
+        <button class="nav-btn" data-prompt="What are today’s 30-year fixed rates?">Rates today</button>
+        <button class="nav-btn" data-prompt="Compare FHA vs Conventional for 5% down, 760 FICO.">FHA vs Conventional</button>
+        <button class="nav-btn" data-prompt="Explain 2-1 buydown with an example at $700k in CA.">2-1 Buydown</button>
+        <button class="nav-btn" data-prompt="What DTI and reserves for a 2-4 unit investment property?">Investor rules</button>
 
-  <script>
-  // Tiny chat harness hitting /api/chat-v39
-  (function(){
-    const $ = (s)=>document.querySelector(s);
-    const q = $('#q'), btn = $('#send'), out = $('#out');
+        <div class="nav-section">Programs</div>
+        <button class="nav-btn" data-prompt="Summarize first-time buyer programs in California (CalHFA, grants, assistance).">First-time buyer</button>
+        <button class="nav-btn" data-prompt="What jumbo loan options are common right now?">Jumbo</button>
+        <button class="nav-btn" data-prompt="What are DSCR loan basics and when are they useful?">DSCR</button>
 
-    async function ask(text){
-      const r = await fetch('/api/chat-v39', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ text })
-      });
-      const j = await r.json().catch(()=>({ok:false,error:'Bad JSON'}));
-      return j;
-    }
+        <div class="nav-section">Tools</div>
+        <button class="nav-btn" id="btn-copy-last">Copy last answer</button>
+        <button class="nav-btn" id="btn-clear">Clear chat</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="mini">Need a formal quote?</div>
+        <a class="cta" href="mailto:rayaan@homerates.ai?subject=Rate%20Quote%20Request">Get a Loan Estimate</a>
+      </div>
+    </aside>
 
-    btn.addEventListener('click', async ()=>{
-      const text = (q.value||'').trim();
-      if (!text) return;
-      btn.disabled = true; out.style.display='block'; out.textContent = 'Thinking';
-      try {
-        const j = await ask(text);
-        out.textContent = JSON.stringify(j, null, 2);
-      } catch (e) {
-        out.textContent = 'Error: ' + (e?.message || e);
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  })();
-  </script>
+    <main class="main">
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <div id="typing" class="typing" hidden>HomeRates is thinking</div>
+
+      <form id="chat-form" class="composer">
+        <input id="user-input" type="text" placeholder="Ask about rates, programs, payments" autocomplete="off"/>
+        <button type="submit" title="Send">Send</button>
+      </form>
+
+      <footer class="watermark">
+         <span id="year"></span> HomeRates.ai  Powered by ChatGPT  Version v39
+      </footer>
+    </main>
+  </div>
+
+  <script src="main.js"></script>
 </body>
 </html>
-

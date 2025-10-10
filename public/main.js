@@ -1,34 +1,71 @@
-const sendBtn = document.getElementById('send');
-const input = document.getElementById('user-input');
-const messages = document.getElementById('messages');
+﻿const form=document.getElementById("chat-form");
+const input=document.getElementById("user-input");
+const messages=document.getElementById("messages");
+const typing=document.getElementById("typing");
+document.getElementById("year").textContent=new Date().getFullYear();
 
-async function ask(text) {
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: text })
+// Sidebar buttons
+document.querySelectorAll(".nav-btn[data-prompt]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    input.value=btn.getAttribute("data-prompt");
+    input.focus();
   });
-  return res.json();
+});
+document.getElementById("btn-clear")?.addEventListener("click",()=>{ messages.innerHTML=""; });
+document.getElementById("btn-copy-last")?.addEventListener("click", async ()=>{
+  const last=[...messages.querySelectorAll(".message.bot")].pop();
+  if(!last) return;
+  await navigator.clipboard.writeText(last.textContent||"");
+  toast("Answer copied");
+});
+
+function toast(t){
+  const el=document.createElement("div");
+  el.textContent=t;
+  el.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:8px 12px;border-radius:10px;opacity:.96;z-index:50";
+  document.body.appendChild(el); setTimeout(()=>el.remove(),1400);
 }
 
-sendBtn.addEventListener('click', async () => {
-  const text = input.value.trim();
-  if (!text) return;
+function appendMessage(role, text){
+  const el=document.createElement("div");
+  el.className=`message ${role}`;
+  el.textContent=text;
+  messages.appendChild(el);
+  messages.scrollTop=messages.scrollHeight;
+  return el;
+}
 
-  const you = document.createElement('p');
-  you.textContent = 'You: ' + text;
-  messages.appendChild(you);
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const text=input.value.trim();
+  if(!text) return;
+  input.value="";
+  appendMessage("user", text);
+  typing.hidden=false;
 
-  try {
-    const data = await ask(text);
-    const ai = document.createElement('p');
-    ai.textContent = data.ok ? ('AI: ' + (data.reply || '')) : ('AI error: ' + data.error);
-    messages.appendChild(ai);
-  } catch (e) {
-    const ai = document.createElement('p');
-    ai.textContent = 'AI error: ' + e.message;
-    messages.appendChild(ai);
-  } finally {
-    input.value = '';
+  try{
+    const res=await fetch("/api/chat",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ message:text })
+    });
+    const data=await res.json();
+    typing.hidden=true;
+
+    if(data && data.ok && (data.answer || data.results)){
+      // structured answer shape
+      const block=document.createElement("div");
+      block.className="message bot";
+      block.textContent=data.answer || "Heres what I found.";
+      messages.appendChild(block);
+      messages.scrollTop=messages.scrollHeight;
+    } else if(data && data.ok){
+      appendMessage("bot", data.reply || data.answer || "Done.");
+    } else {
+      appendMessage("bot", "Error: " + (data?.error || "Unknown issue"));
+    }
+  }catch(err){
+    typing.hidden=true;
+    appendMessage("bot","Network error.");
   }
 });
