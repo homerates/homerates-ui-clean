@@ -1,51 +1,17 @@
 ﻿console.log("[rates] script loaded");
-
-function renderRates(html){
-  const el = document.getElementById("rates");
-  if (!el) { console.warn("[rates] #rates not found"); return; }
-  el.innerHTML = html;
-}
-
+function render(html){ const el = document.getElementById("rates"); if (!el) return; el.innerHTML = html; }
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("[rates] DOMContentLoaded");
-  const host = location.origin;
-
-  const box = document.getElementById("rates");
-  if (!box) { console.warn("[rates] #rates not found on DOMReady"); return; }
-
-  renderRates('<em>Loading live mortgage rates</em>');
-
-  async function ask(text){
-    const r = await fetch(`${host}/api/chat-v39`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
-    });
-    const ct = r.headers.get("content-type") || "";
-    if (!ct.includes("application/json")) throw new Error("Non-JSON response");
-    return r.json();
-  }
-
-  try {
-    console.log("[rates] fetching 10Y + 30Y");
-    const [t10, m30] = await Promise.all([
-      ask("10-year treasury"),
-      ask("30-year fixed rate"),
-    ]);
-
-    const p10  = t10?.pretty || (t10?.value ? `${t10.value}%` : "");
-    const d10  = t10?.date?.slice(0,10) || "";
-    const pm30 = m30?.pretty || (m30?.value ? `${m30.value}%` : "");
-    const dm30 = m30?.date?.slice(0,10) || "";
-
-    renderRates(`
-      <strong>Live Mortgage Rates:</strong>
-      10Y Treasury: ${p10} <span style="opacity:.6">(as of ${d10})</span> 
-      30Y Fixed: ${pm30} <span style="opacity:.6">(as of ${dm30})</span>
-    `);
+  render('<em>Loading live mortgage rates…</em>');
+  try{
+    const r = await fetch("/api/rates-v39", { cache:"no-store" }); const j = await r.json();
+    if (!j?.ok) throw new Error(j?.error || "Rates unavailable");
+    const ten  = j.tenYear?.pretty || (j.tenYear?.value ? `${j.tenYear.value}%` : "");
+    const tenD = j.tenYear?.date?.slice(0,10) || "";
+    const m30  = j.mortgage30?.pretty || (j.mortgage30?.value ? `${j.mortgage30.value}%` : "");
+    const m30D = j.mortgage30?.date?.slice(0,10) || "";
+    const two  = j.twoYear?.pretty || (j.twoYear?.value ? `${j.twoYear.value}%` : null);
+    const twoD = j.twoYear?.date?.slice(0,10) || null;
+    render(`<strong>Live Mortgage Rates:</strong> 10Y Treasury: ${ten} <span style="opacity:.6">(as of ${tenD})</span>  30Y Fixed: ${m30} <span style="opacity:.6">(as of ${m30D})</span>${two ? `  2Y: ${two} <span style="opacity:.6">(as of ${twoD})</span>` : ""}`);
     console.log("[rates] render complete");
-  } catch (e) {
-    console.error("[rates] widget error:", e);
-    renderRates("Live Mortgage Rates unavailable");
-  }
+  }catch(e){ console.error("[rates] widget error:", e); render("Live Mortgage Rates unavailable"); }
 });
