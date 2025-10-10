@@ -1,51 +1,87 @@
-﻿<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HomeRates.ai — Chat (v39-proof)</title>
+  <title>HomeRates.ai  Chat</title>
+  <meta name="description" content="Live mortgage rates and chat for homebuyers and homeowners." />
+
   <style>
-    :root { --bg:#0b0b0c; --fg:#e9e9ea; --muted:#9a9aa1; --panel:#151517; --accent:#79ffe1; }
-    html,body { height:100%; margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    .wrap { display:grid; grid-template-rows:auto 1fr auto; height:100%; }
-    header { padding:14px 16px; border-bottom:1px solid #222; display:flex; align-items:center; gap:10px; }
-    header .dot { width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent); }
-    header .title { font-weight:600; letter-spacing:0.2px; }
-    main { display:grid; grid-template-rows:1fr auto; }
-    .log { padding:16px; overflow:auto; }
-    .msg { max-width:820px; margin:0 auto 14px; padding:12px 14px; border-radius:12px; background:var(--panel); }
-    .msg.me { background:#1b1b1f; }
-    .meta { color:var(--muted); font-size:12px; margin-bottom:6px; }
-    form { display:flex; gap:10px; padding:12px; border-top:1px solid #222; background:linear-gradient(#0b0b0c, #0f0f12); }
-    textarea { flex:1; resize:none; height:56px; padding:12px; border-radius:12px; border:1px solid #2a2a2f; background:#121215; color:var(--fg); }
-    button { padding:0 16px; border-radius:12px; border:1px solid #2a2a2f; background:#19191d; color:var(--fg); cursor:pointer; }
-    button:disabled { opacity:0.6; cursor:not-allowed; }
-    .status { color:var(--muted); font-size:12px; padding:0 12px 12px; }
-    a { color:var(--accent); text-decoration:none; }
+    :root { --fg:#111; --muted:#666; --bg:#fff; --accent:#0b5fff; }
+    *{box-sizing:border-box}
+    body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial,Noto Sans,sans-serif;color:var(--fg);background:var(--bg)}
+    header{padding:20px 16px;border-bottom:1px solid #eee}
+    .wrap{max-width:840px;margin:0 auto;padding:16px}
+    #rates{margin:8px 0;font:14px/1.4 system-ui}
+    .muted{color:var(--muted)}
+    .chip{display:inline-block;padding:.2rem .5rem;border:1px solid #ddd;border-radius:999px;font-size:12px;margin-right:6px}
+    .chat{margin-top:16px;border:1px solid #eee;border-radius:12px;padding:12px}
+    .chat textarea{width:100%;min-height:90px;border:1px solid #ddd;border-radius:8px;padding:10px;font:inherit}
+    .chat button{margin-top:8px;padding:10px 14px;border-radius:8px;border:1px solid #ddd;background:#f7f7f7;cursor:pointer}
+    .chat button:hover{background:#f0f0f0}
+    pre.result{white-space:pre-wrap;background:#fafafa;border:1px solid #eee;padding:10px;border-radius:8px;overflow:auto}
   </style>
+
+  <!-- Defer-load the rates widget -->
+  <script src="/rates.v39.js" defer></script>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="dot"></div>
-      <div class="title">HomeRates.ai — Chat (v39-proof)</div>
-    </header>
+  <header>
+    <div class="wrap">
+      <h1 style="margin:0;">HomeRates.ai</h1>
+      <div class="muted">Trusted, direct answers for buyers, owners, and pros.</div>
 
-    <main>
-      <div id="log" class="log"></div>
-      <div class="status" id="status">Checking service health…</div>
-      <form id="chat">
-        <textarea id="q" placeholder="Ask about rates, programs, seller credits…"></textarea>
-        <button id="send" type="submit">Send</button>
-      </form>
-    </main>
+      <!--  Widget container lives in the BODY -->
+      <div id="rates"><em>Loading live mortgage rates</em></div>
 
-    <footer class="status">
-      Health: <a href="/api/health-v39" target="_blank">/api/health-v39</a> •
-      API: <a href="/api/chat-v39" target="_blank">/api/chat-v39</a>
-    </footer>
-  </div>
+      <div style="margin-top:8px">
+        <span class="chip">Ask: 10-year treasury</span>
+        <span class="chip">30-year fixed rate</span>
+        <span class="chip">Seller credits today</span>
+      </div>
+    </div>
+  </header>
 
-  <script src="/assets/main.v39.js" type="module"></script>
+  <main class="wrap">
+    <!-- Simple chat block that talks to /api/chat-v39 -->
+    <section class="chat">
+      <label for="q"><strong>Try me:</strong></label>
+      <textarea id="q" placeholder="Type a mortgage or market question"></textarea>
+      <button id="send">Ask</button>
+      <pre id="out" class="result" style="display:none"></pre>
+    </section>
+  </main>
+
+  <script>
+  // Tiny chat harness hitting /api/chat-v39
+  (function(){
+    const $ = (s)=>document.querySelector(s);
+    const q = $('#q'), btn = $('#send'), out = $('#out');
+
+    async function ask(text){
+      const r = await fetch('/api/chat-v39', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text })
+      });
+      const j = await r.json().catch(()=>({ok:false,error:'Bad JSON'}));
+      return j;
+    }
+
+    btn.addEventListener('click', async ()=>{
+      const text = (q.value||'').trim();
+      if (!text) return;
+      btn.disabled = true; out.style.display='block'; out.textContent = 'Thinking';
+      try {
+        const j = await ask(text);
+        out.textContent = JSON.stringify(j, null, 2);
+      } catch (e) {
+        out.textContent = 'Error: ' + (e?.message || e);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  })();
+  </script>
 </body>
 </html>
