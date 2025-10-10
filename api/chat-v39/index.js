@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     const { text = "" } = await readBody(req);
     const q = String(text || "").toLowerCase().trim();
 
-    // ---- FRED: 10-year Treasury (DGS10)
+    // ---- FRED: 10-year Treasury (DGS10) - return the NEWEST real value
     if (q.includes("10-year") || q.includes("10 year") || q.includes("dgs10") || q.includes("10yr")) {
       if (!process.env.FRED_API_KEY) {
         return res.status(200).json({ ok: false, provider: "FRED", error: "FRED_API_KEY missing" });
@@ -29,14 +29,16 @@ module.exports = async function handler(req, res) {
       url.searchParams.set("series_id", "DGS10");
       url.searchParams.set("api_key", process.env.FRED_API_KEY);
       url.searchParams.set("file_type", "json");
-      url.searchParams.set("limit", "3");
+      // ✅ newest first, small buffer, we pick the first valid (non ".") value
+      url.searchParams.set("sort_order", "desc");
+      url.searchParams.set("limit", "5");
 
       const r = await fetch(url.toString(), { cache: "no-store" });
       if (!r.ok) {
         return res.status(200).json({ ok: false, provider: "FRED", status: r.status });
       }
       const j = await r.json();
-      const obs = (j?.observations || []).filter(o => o?.value && o.value !== ".").pop() || null;
+      const obs = (j?.observations || []).find(o => o?.value && o.value !== ".") || null;
 
       return res.status(200).json({
         ok: true,
@@ -48,7 +50,7 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // ---- Tavily fallback
+    // ---- Tavily fallback for other queries
     if (process.env.TAVILY_API_KEY) {
       const tr = await fetch("https://api.tavily.com/search", {
         method: "POST",
@@ -72,11 +74,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // ---- No providers
+    // ---- No providers available
     return res.status(200).json({ ok: true, provider: "stub", note: "no provider matched" });
   } catch (e) {
     console.error("chat-v39 error:", e);
-    // Always 200 so the UI can read JSON error
     return res.status(200).json({ ok: false, provider: "error", error: String(e?.message || e) });
   }
 };
