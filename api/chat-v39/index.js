@@ -1,4 +1,4 @@
-// Minimal helper to read JSON body in Vercel/Node
+// Read JSON body (works in Vercel/Node)
 async function readBody(req) {
   if (req.body) return req.body;
   return await new Promise((resolve, reject) => {
@@ -21,17 +21,16 @@ async function getFredLatest(seriesId, apiKey) {
   url.searchParams.set("limit", "8");         // small buffer to skip blanks
 
   const r = await fetch(url.toString(), { cache: "no-store" });
-  if (!r.ok) return { ok: false, status: r.status };
+  if (!r.ok) return { ok: false, status: r.status, seriesId };
 
   const j = await r.json();
   const obs = (j?.observations || []).find(o => o?.value && o.value !== ".");
-  if (!obs) return { ok: false, status: 204 }; // no content we can use
+  if (!obs) return { ok: false, status: 204, seriesId }; // no usable data
 
-  return { ok: true, date: obs.date, value: obs.value };
+  return { ok: true, seriesId, date: obs.date, value: obs.value };
 }
 
 function pct(v) {
-  // FRED yields come as percent (e.g., 4.13) — present as "4.13%"
   const n = Number(v);
   if (!isFinite(n)) return null;
   return `${n.toFixed(2)}%`;
@@ -46,7 +45,7 @@ module.exports = async function handler(req, res) {
     const { text = "" } = await readBody(req);
     const q = String(text || "").toLowerCase();
 
-    // --- INTENTS ---
+    // --- Simple intents ---
     const wants10y = /(10[-\s]?year|10yr|dgs10|\b10y\b)/i.test(q);
     const wants2y  = /(2[-\s]?year|2yr|dgs2|\b2y\b)/i.test(q);
     const wants30m = /(30[-\s]?year.*fixed|30yr.*fixed|mortgage\s*30|mortgage30us)/i.test(q);
@@ -54,7 +53,7 @@ module.exports = async function handler(req, res) {
     // Prefer FRED when we can
     if ((wants10y || wants2y || wants30m) && process.env.FRED_API_KEY) {
       const series = wants10y ? "DGS10" : wants2y ? "DGS2" : "MORTGAGE30US";
-      const tag    = wants10y ? "10-year Treasury" : wants2y ? "2-year Treasury" : "30-year fixed mortgage";
+      const label  = wants10y ? "10-year Treasury" : wants2y ? "2-year Treasury" : "30-year fixed mortgage";
 
       const latest = await getFredLatest(series, process.env.FRED_API_KEY);
       if (latest.ok) {
@@ -62,16 +61,16 @@ module.exports = async function handler(req, res) {
           ok: true,
           provider: "FRED",
           series,
-          label: tag,
+          label,
           date: latest.date,
           value: latest.value,
           pretty: pct(latest.value),
         });
       }
-      // fall through to Tavily if FRED failed
+      // If FRED failed, let Tavily try below.
     }
 
-    // Tavily fallback (general Q&A / newsy stuff)
+    // Tavily fallback (general Q&A / newsy)
     if (process.env.TAVILY_API_KEY) {
       const tr = await fetch("https://api.tavily.com/search", {
         method: "POST",
