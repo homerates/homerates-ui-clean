@@ -1,64 +1,29 @@
-﻿<!DOCTYPE html>
+﻿<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>HomeRates.ai Chat  20251010172723</title>
-  <link rel="stylesheet" href="styles.css?v=20251010172723"/>
-  <link rel="icon" href="assets/HR-logo.svg"/>
+  <link rel="stylesheet" href="/styles.css?v=20251010172723">
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <img src="assets/HR-logo.svg" alt="HomeRates.ai Logo" class="logo"/>
-      <div>
-        <h1>HomeRates.ai</h1>
-        <p class="sub">Version v39  Powered by ChatGPT</p>
-      </div>
+  <header class="topbar">
+    <div class="left">
+      <img src="/assets/hr-logo.svg?v=20251010172723" alt="HomeRates.ai" class="logo"/>
+      <span class="brand">HomeRates.ai</span>
     </div>
+    <div class="env">Build 20251010172723</div>
   </header>
 
-  <div class="shell">
-    <aside class="sidebar">
-      <nav class="nav">
-        <div class="nav-section">Quick actions</div>
-        <button class="nav-btn" data-prompt="What are todays 30-year fixed rates?">Rates today</button>
-        <button class="nav-btn" data-prompt="Compare FHA vs Conventional for 5% down, 760 FICO.">FHA vs Conventional</button>
-        <button class="nav-btn" data-prompt="Explain 2-1 buydown with an example at $700k in CA.">2-1 Buydown</button>
-        <button class="nav-btn" data-prompt="What DTI and reserves for a 2-4 unit investment property?">Investor rules</button>
+  <main id="app" class="container">
+    <div id="messages" class="messages" aria-live="polite" aria-label="Chat transcript"></div>
+    <form id="composer" class="composer" autocomplete="off">
+      <input id="input" type="text" placeholder="Ask about Access Zero, DSCR, seller credits"/>
+      <button id="send" type="submit">Send</button>
+    </form>
+  </main>
 
-        <div class="nav-section">Programs</div>
-        <button class="nav-btn" data-prompt="Summarize first-time buyer programs in California (CalHFA, grants, assistance).">First-time buyer</button>
-        <button class="nav-btn" data-prompt="What jumbo loan options are common right now?">Jumbo</button>
-        <button class="nav-btn" data-prompt="What are DSCR loan basics and when are they useful?">DSCR</button>
-
-        <div class="nav-section">Tools</div>
-        <button class="nav-btn" id="btn-copy-last">Copy last answer</button>
-        <button class="nav-btn" id="btn-clear">Clear chat</button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="mini">Need a formal quote?</div>
-        <a class="cta" href="mailto:rayaan@homerates.ai?subject=Rate%20Quote%20Request">Get a Loan Estimate</a>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div id="messages" class="messages" aria-live="polite"></div>
-      <div id="typing" class="typing" hidden>HomeRates is thinking</div>
-
-      <form id="chat-form" class="composer">
-        <input id="user-input" type="text" placeholder="Ask about rates, programs, payments" autocomplete="off"/>
-        <button type="submit" title="Send">Send</button>
-      </form>
-
-      <footer class="watermark">
-         <span id="year"></span> HomeRates.ai  Powered by ChatGPT  Version v39
-      </footer>
-    </main>
-  </div>
-
-  <script src="main.js?v=20251010172723"></script>
+  <script src="/main.js?v=20251010172723"></script>
 </body>
 </html>
 
