@@ -1,43 +1,42 @@
-export default async function handler(req, res) {
-  res.status(200).json({ ok: true, route: "/api/chat-v39", note: "stub" });
-}export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Use POST" });
-  }
+async function readBody(req) {
+  if (req.body) return req.body;
+  return await new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", (c) => (data += c));
+    req.on("end", () => {
+      try { resolve(JSON.parse(data || "{}")); } catch { resolve({}); }
+    });
+    req.on("error", reject);
+  });
+}
 
-  const { text = "" } = await readBody(req);
-  const q = String(text || "").toLowerCase().trim();
-
+module.exports = async function handler(req, res) {
   try {
-    // ---- FRED: 10-year Treasury (DGS10) quick path
-    if (
-      q.includes("10-year") ||
-      q.includes("10 year") ||
-      q.includes("dgs10") ||
-      q.includes("10yr")
-    ) {
+    if (req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "Use POST" });
+    }
+
+    const { text = "" } = await readBody(req);
+    const q = String(text || "").toLowerCase().trim();
+
+    // ---- FRED: 10-year Treasury (DGS10)
+    if (q.includes("10-year") || q.includes("10 year") || q.includes("dgs10") || q.includes("10yr")) {
       if (!process.env.FRED_API_KEY) {
-        return res.status(200).json({
-          ok: false,
-          provider: "FRED",
-          error: "FRED_API_KEY missing",
-        });
+        return res.status(200).json({ ok: false, provider: "FRED", error: "FRED_API_KEY missing" });
       }
 
-      const url = new URL(
-        "https://api.stlouisfed.org/fred/series/observations"
-      );
+      const url = new URL("https://api.stlouisfed.org/fred/series/observations");
       url.searchParams.set("series_id", "DGS10");
       url.searchParams.set("api_key", process.env.FRED_API_KEY);
       url.searchParams.set("file_type", "json");
-      url.searchParams.set("limit", "3"); // grab a few, we'll pick latest real value
+      url.searchParams.set("limit", "3");
 
       const r = await fetch(url.toString(), { cache: "no-store" });
+      if (!r.ok) {
+        return res.status(200).json({ ok: false, provider: "FRED", status: r.status });
+      }
       const j = await r.json();
-
-      const obs =
-        (j?.observations || []).filter((o) => o?.value && o.value !== ".").pop() ||
-        null;
+      const obs = (j?.observations || []).filter(o => o?.value && o.value !== ".").pop() || null;
 
       return res.status(200).json({
         ok: true,
@@ -49,7 +48,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ---- Tavily fallback for everything else
+    // ---- Tavily fallback
     if (process.env.TAVILY_API_KEY) {
       const tr = await fetch("https://api.tavily.com/search", {
         method: "POST",
@@ -63,40 +62,21 @@ export default async function handler(req, res) {
         }),
       });
 
-      const tj = await tr.json();
+      const tj = await tr.json().catch(() => ({}));
       return res.status(200).json({
         ok: true,
         provider: "Tavily",
         answer: tj?.answer ?? null,
-        results: (tj?.results || []).slice(0, 3),
+        results: Array.isArray(tj?.results) ? tj.results.slice(0, 3) : [],
+        status: tr.status,
       });
     }
 
-    // ---- Nothing matched / no keys
-    return res
-      .status(200)
-      .json({ ok: true, provider: "stub", note: "no provider matched" });
+    // ---- No providers
+    return res.status(200).json({ ok: true, provider: "stub", note: "no provider matched" });
   } catch (e) {
-    return res.status(200).json({
-      ok: false,
-      provider: "error",
-      error: String(e?.message || e),
-    });
+    console.error("chat-v39 error:", e);
+    // Always 200 so the UI can read JSON error
+    return res.status(200).json({ ok: false, provider: "error", error: String(e?.message || e) });
   }
-}
-
-async function readBody(req) {
-  if (req.body) return req.body;
-  return await new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", (c) => (data += c));
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(data || "{}"));
-      } catch {
-        resolve({});
-      }
-    });
-    req.on("error", reject);
-  });
-}
+};
