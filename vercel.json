@@ -1,8 +1,12 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.js": { "runtime": "nodejs20.x" }
+  },
   "routes": [
-    { "src": "^/api/chat$",   "dest": "/api/chat"   },
+    { "src": "^/api/ping$",  "dest": "/api/ping" },
     { "src": "^/api/vitals$", "dest": "/api/vitals" },
+    { "src": "^/api/chat$",  "dest": "/api/chat" },
     { "handle": "filesystem" },
     { "src": ".*", "dest": "/index.html" }
   ]
