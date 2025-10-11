@@ -1,8 +1,6 @@
 ﻿export const runtime = "edge";
 
-// Adjust for your domains if you need stricter CORS:
-const ALLOW_ORIGIN = "*"; // set to your domain when ready
-
+// simple JSON helper
 function json(data, status = 200, moreHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -10,7 +8,7 @@ function json(data, status = 200, moreHeaders = {}) {
       "content-type": "application/json",
       "cache-control": "no-store, max-age=0",
       "x-handler": "chat2@edge",
-      "access-control-allow-origin": ALLOW_ORIGIN,
+      "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET,POST,OPTIONS",
       "access-control-allow-headers": "content-type,authorization",
       ...moreHeaders
@@ -19,11 +17,11 @@ function json(data, status = 200, moreHeaders = {}) {
 }
 
 export default async function handler(req) {
-  // CORS preflight
+  // --- CORS preflight ---
   if (req.method === "OPTIONS") return json({ ok: true });
 
+  // --- GET probe (for health + env check) ---
   if (req.method === "GET") {
-    // Lightweight probe for health checks
     return json({
       ok: true,
       route: "chat2",
@@ -39,40 +37,23 @@ export default async function handler(req) {
     });
   }
 
+  // --- POST readiness echo ---
   if (req.method === "POST") {
     try {
       const body = await req.json().catch(() => ({}));
       const { messages = [], system = "", tools = {} } = body || {};
-
-      //  Example guard: require OpenAI key before proceeding
-      if (!process.env.OPENAI_API_KEY) {
-        return json({ ok: false, error: "Missing OPENAI_API_KEY" }, 500);
-      }
-
-      // TODO: plug in your real chat logic here.
-      // Keep it Edge-safe (no fs/tls/net). Use fetch() for OpenAI/Tavily.
-      //
-      // Example skeleton (disabled for now):
-      // const r = await fetch("https://api.openai.com/v1/responses", {
-      //   method: "POST",
-      //   headers: {
-      //     "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      //     "Content-Type": "application/json"
-      //   },
-      //   body: JSON.stringify({
-      //     model: "gpt-4.1-mini",
-      //     input: [{ role: "system", content: system }, ...messages]
-      //   })
-      // });
-      // const data = await r.json();
-      // return json({ ok: true, model: data.model, output: data.output });
 
       return json({
         ok: true,
         route: "chat2",
         runtime: "edge",
         method: "POST",
-        echo: { count: messages.length, hasSystem: Boolean(system), tools: Object.keys(tools || {}).length }
+        echo: {
+          count: messages.length,
+          firstRole: messages[0]?.role || null,
+          hasSystem: Boolean(system),
+          toolCount: Object.keys(tools || {}).length
+        }
       });
     } catch (err) {
       return json({
@@ -84,5 +65,6 @@ export default async function handler(req) {
     }
   }
 
+  // --- fallback for unsupported methods ---
   return json({ ok: false, error: "Method not allowed" }, 405);
 }
