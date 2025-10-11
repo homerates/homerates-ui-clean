@@ -1,5 +1,7 @@
 ﻿export const runtime = "edge";
 
+const VERSION = "chat2-echo-2025-10-11-locked";
+
 // simple JSON helper
 function json(data, status = 200, moreHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -17,17 +19,17 @@ function json(data, status = 200, moreHeaders = {}) {
 }
 
 export default async function handler(req) {
-  // --- CORS preflight ---
-  if (req.method === "OPTIONS") return json({ ok: true });
+  // CORS preflight
+  if (req.method === "OPTIONS") return json({ ok: true, version: VERSION });
 
-  // --- GET probe (for health + env check) ---
+  // GET probe
   if (req.method === "GET") {
     return json({
       ok: true,
       route: "chat2",
       runtime: "edge",
       method: "GET",
-      version: "v1.0.0",
+      version: VERSION,
       now: new Date().toISOString(),
       env: {
         hasOpenAI: Boolean(process.env.OPENAI_API_KEY),
@@ -37,7 +39,7 @@ export default async function handler(req) {
     });
   }
 
-  // --- POST readiness echo ---
+  // POST echo (readiness)
   if (req.method === "POST") {
     try {
       const body = await req.json().catch(() => ({}));
@@ -48,6 +50,7 @@ export default async function handler(req) {
         route: "chat2",
         runtime: "edge",
         method: "POST",
+        version: VERSION,
         echo: {
           count: messages.length,
           firstRole: messages[0]?.role || null,
@@ -60,11 +63,12 @@ export default async function handler(req) {
         ok: false,
         route: "chat2",
         runtime: "edge",
+        method: "POST",
+        version: VERSION,
         error: err?.message || "unknown"
       }, 500);
     }
   }
 
-  // --- fallback for unsupported methods ---
-  return json({ ok: false, error: "Method not allowed" }, 405);
+  return json({ ok: false, error: "Method not allowed", version: VERSION }, 405);
 }
