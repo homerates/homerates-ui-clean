@@ -1,9 +1,9 @@
 {
   "version": 2,
   "routes": [
-    { "src": "^/api/ping$",   "dest": "/api/ping" },
+    { "src": "^/api/chat$",   "dest": "/api/chat-edge" },
     { "src": "^/api/vitals$", "dest": "/api/vitals" },
-    { "src": "^/api/chat$",   "dest": "/api/chat" },
+    { "src": "^/api/ping$",   "dest": "/api/ping" },
     { "handle": "filesystem" },
     { "src": ".*", "dest": "/index.html" }
   ]
