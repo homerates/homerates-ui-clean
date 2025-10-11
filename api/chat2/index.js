@@ -1,74 +1,19 @@
-﻿export const runtime = "edge";
+﻿// api/chat2/index.js
+export default function handler(req, res) {
+  // Never let this get cached anywhere
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-const VERSION = "chat2-echo-2025-10-11-locked";
+  // Helpful metadata for quick sanity checks
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA || 'no-sha';
+  const deployId = process.env.VERCEL_DEPLOYMENT_ID || 'no-deploy';
 
-// simple JSON helper
-function json(data, status = 200, moreHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "content-type": "application/json",
-      "cache-control": "no-store, max-age=0",
-      "x-handler": "chat2@edge",
-      "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type,authorization",
-      ...moreHeaders
-    }
+  res.status(200).json({
+    ok: true,
+    method: req.method,
+    version: 'chat2-echo-2025-10-11-fixed', // <- obvious new tag
+    sha,
+    deployId,
+    now: new Date().toISOString(),
   });
-}
-
-export default async function handler(req) {
-  // CORS preflight
-  if (req.method === "OPTIONS") return json({ ok: true, version: VERSION });
-
-  // GET probe
-  if (req.method === "GET") {
-    return json({
-      ok: true,
-      route: "chat2",
-      runtime: "edge",
-      method: "GET",
-      version: VERSION,
-      now: new Date().toISOString(),
-      env: {
-        hasOpenAI: Boolean(process.env.OPENAI_API_KEY),
-        hasTavily: Boolean(process.env.TAVILY_API_KEY),
-        hasFRED: Boolean(process.env.FRED_API_KEY)
-      }
-    });
-  }
-
-  // POST echo (readiness)
-  if (req.method === "POST") {
-    try {
-      const body = await req.json().catch(() => ({}));
-      const { messages = [], system = "", tools = {} } = body || {};
-
-      return json({
-        ok: true,
-        route: "chat2",
-        runtime: "edge",
-        method: "POST",
-        version: VERSION,
-        echo: {
-          count: messages.length,
-          firstRole: messages[0]?.role || null,
-          hasSystem: Boolean(system),
-          toolCount: Object.keys(tools || {}).length
-        }
-      });
-    } catch (err) {
-      return json({
-        ok: false,
-        route: "chat2",
-        runtime: "edge",
-        method: "POST",
-        version: VERSION,
-        error: err?.message || "unknown"
-      }, 500);
-    }
-  }
-
-  return json({ ok: false, error: "Method not allowed", version: VERSION }, 405);
 }
