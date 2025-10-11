@@ -1,20 +1,8 @@
-{
-  "headers": [
-    {
-      "source": "/build-footer.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    },
-    {
-      "source": "/build-meta.json",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
-  ],
-  "rewrites": [
-    { "source": "/api/chat", "destination": "/api/chat2" },
-    { "source": "/(.*)", "destination": "/index.html" }
+﻿{
+  "version": 2,
+  "routes": [
+    { "src": "/api/(.*)",    "dest": "/api/$1" },
+    { "src": "/assets/(.*)", "dest": "/public/assets/$1" },
+    { "src": "/(.*)",        "dest": "/index.html" }
   ]
 }
