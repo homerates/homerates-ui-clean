@@ -1,0 +1,7 @@
+﻿{
+  "name": "homerates-ui-clean",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-meta.js"
+  }
+}
