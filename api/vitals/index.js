@@ -1,4 +1,4 @@
-function send(res, code, obj) {
+﻿function send(res, code, obj) {
   res.statusCode = code;
   res.setHeader("Content-Type","application/json");
   res.setHeader("Cache-Control","no-store");
@@ -24,5 +24,3 @@ async function handler(req, res) {
 module.exports = handler;
 export default handler;
 //  valid runtime string:
-module.exports.config = { runtime: "nodejs20.x" };
-export const config = { runtime: "nodejs20.x" };

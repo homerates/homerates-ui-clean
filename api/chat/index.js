@@ -59,6 +59,4 @@ async function handler(req, res) {
 
 // Dual export + force Node runtime (covers ESM and CJS)
 module.exports = handler;
-module.exports.config = { runtime: "nodejs20.x" };
 export default handler;
-export const config = { runtime: "nodejs20.x" };
