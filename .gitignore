@@ -6,3 +6,5 @@ __pycache__/
 backend/
 public/New Text Document.txt
 .vercel
+
+*.bak
