@@ -1,15 +1,1 @@
-{
-  "version": 2,
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-
-    // 👉 Allow real files through (must be BEFORE the SPA catch-all)
-    { "src": "/(.*)\\.(js|css|map|svg|png|jpg|jpeg|gif|ico|webp|txt)", "dest": "/$1.$2" },
-
-    // If your logos live under public/assets, keep this mapping:
-    { "src": "/assets/(.*)", "dest": "/public/assets/$1" },
-
-    // SPA fallback for everything else
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
-}
+{"version":2,"routes":[{"src":"/api/(.*)","dest":"/api/$1"},{"src":"/(.*)\\.(js|css|map|svg|png|jpg|jpeg|gif|ico|webp|txt)","dest":"/$1.$2"},{"src":"/assets/(.*)","dest":"/public/assets/$1"},{"src":"/(.*)","dest":"/index.html"}]}
