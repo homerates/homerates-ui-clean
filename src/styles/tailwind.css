@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* tiny global tweak example */
+:root { --hr-accent: #0ea5e9; }
