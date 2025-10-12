@@ -1,5 +1,9 @@
-{"version":2,"routes":[
-  {"src":"/api/(.*)","dest":"/api/$1"},
-  {"src":"/(.*)\\.(js|mjs|css|map|svg|png|jpg|jpeg|gif|ico|webp|txt)","dest":"/$1.$2"},
-  {"src":"/(.*)","dest":"/index.html"}
-]}
+{
+  "version": 2,
+  "routes": [
+    { "src": "^/assets/(.*)$", "dest": "/assets/$1" },
+    { "src": "^/api/(.*)$",    "dest": "/api/$1"    },
+    { "handle": "filesystem" },
+    { "src": "^(?!/api|/assets).*$", "dest": "/index.html" }
+  ]
+}
