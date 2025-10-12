@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       headers:{ "Content-Type":"application/json", "Authorization":`Bearer ${key}` },
       body: JSON.stringify(payload)
     });
-    if (!r.ok) throw new Error(`Tavily ${r.status}`);
+    if (!r.ok) throw new Error(\`Tavily \${r.status}\`);
     const json = await r.json();
 
     const items = (json.results||[]).map(x => {
@@ -27,6 +27,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok:true, q, count:items.length, items });
   } catch (e) {
-    return res.status(500).json({ ok:false, error:String(e) });
+    res.status(500).json({ ok:false, error:String(e) });
   }
 }
