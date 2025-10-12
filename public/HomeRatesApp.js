@@ -1,4 +1,4 @@
-ï»¿// public/HomeRatesApp.js â€” UMD React (uses window.React / window.ReactDOM)
+// public/HomeRatesApp.js — UMD React (uses window.React / window.ReactDOM)
 (function () {
   const h = React.createElement;
 
@@ -6,7 +6,7 @@
   const useQueryParam = (k) => React.useMemo(() => {
     try { return new URL(location.href).searchParams.get(k); } catch { return null; }
   }, [k]);
-  const shortSha = (s) => (s ? String(s).slice(0, 7) : "â€”");
+  const shortSha = (s) => (s ? String(s).slice(0, 7) : "—");
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   async function typeIn(text, onChunk, d = 6) { let b=""; for (const ch of text) { b+=ch; onChunk(b); await sleep(d); } }
   const lastUser = (m=[]) => { for (let i=m.length-1;i>=0;i--) if (m[i].role==="user") return m[i]; return null; };
@@ -14,15 +14,15 @@
   // ---------- logos (direct path to files that live under public/assets) ----------
   function LogoMark({ className="h-7 w-7" } = {}) {
     const ref = React.useRef(null);
-    const p1  = "/public/assets/homerates-mark.svg";
-    const fb  = "/assets/HR-logo.svg"; // safe fallback already in deploy
+    const p1  = "/assets/homerates-mark.svg";
+    const fb  = "/assets/homerates-mark.svg"; // safe fallback already in deploy
     return h("img", { ref, src: p1, alt:"HomeRates", className,
       onError: () => { if (ref.current && ref.current.src !== fb) ref.current.src = fb; }});
   }
   function LogoWordmark({ className="h-4" } = {}) {
     const ref = React.useRef(null);
-    const p1  = "/public/assets/homerates-wordmark.svg";
-    const fb  = "/assets/HR-logo.svg";
+    const p1  = "/assets/homerates-wordmark.svg";
+    const fb  = "/assets/homerates-mark.svg";
     return h("img", { ref, src: p1, alt:"HomeRates", className,
       onError: () => { if (ref.current && ref.current.src !== fb) ref.current.src = fb; }});
   }
@@ -52,7 +52,7 @@
 
     const Pill = (k,v) => h("div", { className:"inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs" },
       h("span", { className:"text-zinc-500" }, k),
-      h("span", { className:"font-mono" }, v ?? "â€”")
+      h("span", { className:"font-mono" }, v ?? "—")
     );
     const Dot = ({ok}) => h("span", { className:`h-2.5 w-2.5 rounded-full ${ok?"bg-emerald-500":"bg-red-500"}`});
 
@@ -60,7 +60,7 @@
       h("div", { className:"mx-auto max-w-6xl px-4 py-3 flex flex-wrap items-center justify-between gap-3" },
         h("div", { className:"flex items-center gap-3" },
           h(LogoMark), h(LogoWordmark),
-          h("span", { className:"text-xs text-zinc-500" }, "â€¢ build status")
+          h("span", { className:"text-xs text-zinc-500" }, "• build status")
         ),
         h("div", { className:"flex items-center gap-2" },
           h(Dot, { ok:s.ok }), Pill("ver", s.ver), Pill("sha", shortSha(s.sha)), Pill("ms", s.ms),
@@ -100,7 +100,7 @@
         h("div", { className:"md:col-span-2" },
           h("button", { onClick: probe, disabled: busy,
             className:"rounded-md border border-zinc-300 bg-white px-3 py-1 text-xs hover:bg-zinc-50 disabled:opacity-60" },
-            busy ? "Probingâ€¦" : "Probe APIs")
+            busy ? "Probing…" : "Probe APIs")
         )
       )
     );
@@ -115,9 +115,9 @@
   }
   function TopQuestions() {
     const qs = [
-      { id:1, label:"What are todayâ€™s mortgage rates?", text:"Show me todayâ€™s mortgage rates for 30-year, 15-year, and ARM loans." },
+      { id:1, label:"What are today’s mortgage rates?", text:"Show me today’s mortgage rates for 30-year, 15-year, and ARM loans." },
       { id:2, label:"How much will I qualify for?", text:"Estimate how much home I can afford based on my income and credit score." },
-      { id:3, label:"First-time homebuyer â€” where do I start?", text:"Give me a simple step-by-step guide for buying my first home." },
+      { id:3, label:"First-time homebuyer — where do I start?", text:"Give me a simple step-by-step guide for buying my first home." },
       { id:4, label:"What down payment assistance programs are available?", text:"List down payment assistance programs available in California." },
       { id:5, label:"Compare lenders and rates.", text:"Help me compare current lender rates and APRs side-by-side." }
     ];
@@ -147,7 +147,7 @@
     return h("div", { className:"grid gap-2 mt-3" },
       h("button", { onClick: probe, disabled: loading,
         className:"rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm hover:bg-zinc-100 disabled:opacity-60" },
-        loading ? "Probingâ€¦" : "Probe APIs"),
+        loading ? "Probing…" : "Probe APIs"),
       h("pre", { className:"max-h-40 overflow-auto text-xs rounded border border-zinc-200 bg-white p-2" }, health ? JSON.stringify(health,null,2) : "(no data)"),
       h("pre", { className:"max-h-40 overflow-auto text-xs rounded border border-zinc-200 bg-white p-2" }, chat ? JSON.stringify(chat,null,2) : "(no data)")
     );
@@ -222,7 +222,7 @@
       ),
       h("div", { className:"flex items-end gap-2" },
         h("textarea", {
-          ref: inputRef, rows: 2, placeholder: "Type a messageâ€¦ (Shift+Enter = newline)",
+          ref: inputRef, rows: 2, placeholder: "Type a message… (Shift+Enter = newline)",
           className:"w-full resize-none rounded-xl border border-zinc-300 bg-white p-3 text-sm outline-none focus:ring-1 focus:ring-emerald-500",
           value: input, onChange: e => setInput(e.target.value),
           onKeyDown: e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }
@@ -242,7 +242,7 @@
       h("div", { className:"mt-2 flex items-center gap-2 text-[11px] text-zinc-500" },
         h("span", null, stamp),
         !isUser && (streaming
-          ? h("span", { className:"animate-pulse" }, "streamingâ€¦")
+          ? h("span", { className:"animate-pulse" }, "streaming…")
           : h(React.Fragment, null,
               h("button", { onClick:onRetry, className:"rounded px-1.5 py-0.5 hover:bg-zinc-100" }, "retry"),
               h("button", { onClick:onCopy, className:"rounded px-1.5 py-0.5 hover:bg-zinc-100" }, "copy"),
@@ -258,7 +258,7 @@
     React.useEffect(() => { setTs(new Intl.DateTimeFormat(undefined, { dateStyle:"medium", timeStyle:"medium" }).format(new Date())); }, []);
     return h("div", { className:"sticky bottom-0 mt-6 border-t border-zinc-200 bg-white/90 py-3 backdrop-blur" },
       h("div", { className:"mx-auto max-w-6xl px-4 text-[11px] text-zinc-500 flex items-center justify-between" },
-        h("span", null, "HomeRates UI â€¢ sandbox build"),
+        h("span", null, "HomeRates UI • sandbox build"),
         h("span", null, ts)
       )
     );
@@ -275,3 +275,4 @@
     h(Footer)
   ));
 })();
+
