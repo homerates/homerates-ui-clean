@@ -11,9 +11,7 @@ export default async function handler(req, res) {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`FRED ${r.status}`);
     const json = await r.json();
-    const points = (json.observations||[])
-      .filter(o => o.value !== ".")
-      .map(o => ({ date:o.date, value:+o.value }));
+    const points = (json.observations||[]).filter(o=>o.value!==".").map(o=>({date:o.date, value:+o.value}));
 
     res.status(200).json({ ok:true, series, count:points.length, points });
   } catch (e) {
