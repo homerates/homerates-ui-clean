@@ -2,8 +2,17 @@
   "version": 2,
   "routes": [
     { "src": "^/assets/(.*)$", "dest": "/assets/$1" },
-    { "src": "^/api/(.*)$",    "dest": "/api/$1"    },
+
+    // --- Chat rewrites: force all chat endpoints to chat2 ---
+    { "src": "^/api/(chat|chat-live|chat-edge)(?:/)?$",       "dest": "/api/chat2" },
+    { "src": "^/api/(chat|chat-live|chat-edge)/(.*)$",        "dest": "/api/chat2/$2" },
+
+    // --- Normal APIs still pass through ---
+    { "src": "^/api/(.*)$", "dest": "/api/$1" },
+
     { "handle": "filesystem" },
+
+    // SPA fallback
     { "src": "^(?!/api|/assets).*$", "dest": "/index.html" }
   ]
 }
