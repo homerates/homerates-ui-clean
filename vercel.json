@@ -1,7 +1,6 @@
-﻿{
+{
   "routes": [
-    { "src": "^/assets/(.*)$", "dest": "/assets/$1" },
     { "src": "^/api/(.*)$", "dest": "/api/$1" },
-    { "src": "^(?!/api/|/assets/).*$", "dest": "/index.html" }
+    { "src": "^(?!/api/).*$", "dest": "/index.html" }
   ]
 }
