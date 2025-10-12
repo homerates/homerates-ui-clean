@@ -1,11 +1,10 @@
-{
-  "version": 2,
+﻿{
   "routes": [
     { "src": "^/assets/(.*)$", "dest": "/assets/$1" },
-    { "src": "^/api/(chat|chat-live|chat-edge)(?:/)?$", "dest": "/api/chat2" },
-    { "src": "^/api/(chat|chat-live|chat-edge)/(.*)$",  "dest": "/api/chat2/$2" },
-    { "src": "^/api/(.*)$", "dest": "/api/$1" },
-    { "handle": "filesystem" },
-    { "src": "^(?!/api|/assets).*$", "dest": "/index.html" }
+
+    { "src": "^/api/echo$", "dest": "/api/echo/index.js" },
+    { "src": "^/api/.*$", "status": 404 },
+
+    { "src": "^(?!/api/|/assets/).*$", "dest": "/index.html" }
   ]
 }
